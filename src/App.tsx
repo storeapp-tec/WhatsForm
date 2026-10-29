@@ -33,7 +33,7 @@ import { TemplateSelectorModal } from './components/Editor/TemplateSelectorModal
 import { ShareModal } from './components/Editor/ShareModal';
 import { buildWhatsAppUrl, decodeFormFromHash } from './utils/whatsapp';
 
-const STORAGE_KEY = 'whatsform_clean_alumno_tutor_v4';
+const STORAGE_KEY = 'whatsform_clean_alumno_tutor_v5';
 
 export const STUDENT_TUTOR_FORM_CONFIG: FormConfig = {
   id: 'form-alumno-tutor',
@@ -149,9 +149,12 @@ export default function App() {
         if (saved) {
           const parsed = JSON.parse(saved);
           if (parsed && Array.isArray(parsed.items) && parsed.id === 'form-alumno-tutor') {
-            // Force clean semester options and empty introMessage
+            // Force clean semester options, empty introMessage, and bold text items
             parsed.introMessage = '';
             parsed.items = parsed.items.map((it: FormItem) => {
+              if (it.kind === 'text') {
+                return { ...it, isBold: true, size: 'title' };
+              }
               if (it.kind === 'field' && (it.id === 'f-alumno-semestre' || it.label.toLowerCase().includes('semestre'))) {
                 return { ...it, options: ['1', '2', '3', '4', '5', '6', '7', '8'] };
               }

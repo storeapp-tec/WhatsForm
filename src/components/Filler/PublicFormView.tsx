@@ -154,15 +154,7 @@ export const PublicFormView: React.FC<PublicFormViewProps> = ({
                     }`}
                   >
                     <p
-                      className={`${
-                        item.size === 'title'
-                          ? 'text-xl font-bold text-slate-900 border-b border-slate-100 pb-2 mb-2'
-                          : item.size === 'subtitle'
-                          ? 'text-lg font-semibold text-slate-800'
-                          : item.size === 'small'
-                          ? 'text-xs text-slate-500'
-                          : 'text-sm text-slate-700'
-                      } ${item.isBold ? 'font-bold' : ''} ${item.isItalic ? 'italic' : ''}`}
+                      className="text-xl font-extrabold text-slate-900 border-b border-slate-100 pb-2 mb-2"
                     >
                       {item.content}
                     </p>
