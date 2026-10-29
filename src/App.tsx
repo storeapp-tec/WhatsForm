@@ -33,7 +33,102 @@ import { TemplateSelectorModal } from './components/Editor/TemplateSelectorModal
 import { ShareModal } from './components/Editor/ShareModal';
 import { buildWhatsAppUrl, decodeFormFromHash } from './utils/whatsapp';
 
-const STORAGE_KEY = 'whatsform_studio_active_config_v1';
+const STORAGE_KEY = 'whatsform_clean_alumno_tutor_v4';
+
+export const STUDENT_TUTOR_FORM_CONFIG: FormConfig = {
+  id: 'form-alumno-tutor',
+  title: 'Datos del Alumno y Tutor',
+  description: 'Por favor ingresa la información requerida a continuación para enviarla por WhatsApp.',
+  countryCode: '52',
+  targetPhone: '8331891871',
+  introMessage: '',
+  outroMessage: 'Quedo al pendiente de la confirmación. ¡Muchas gracias!',
+  items: [
+    {
+      id: 'txt-tutor',
+      kind: 'text',
+      content: 'Datos del tutor o responsable de pagos',
+      size: 'title',
+      isBold: true,
+      isItalic: false,
+      align: 'left',
+      includeInWhatsApp: true,
+    },
+    {
+      id: 'f-tutor-nombre',
+      kind: 'field',
+      fieldType: 'text',
+      label: 'Nombre completo',
+      placeholder: 'Nombre completo del tutor o responsable',
+      required: true,
+      isBoldLabel: true,
+    },
+    {
+      id: 'f-tutor-tel',
+      kind: 'field',
+      fieldType: 'phone',
+      label: 'Teléfono',
+      placeholder: 'Ej. 833 123 4567',
+      required: true,
+      isBoldLabel: true,
+    },
+    {
+      id: 'f-tutor-correo',
+      kind: 'field',
+      fieldType: 'email',
+      label: 'Correo',
+      placeholder: 'ejemplo@correo.com',
+      required: true,
+      isBoldLabel: true,
+    },
+    {
+      id: 'txt-alumno',
+      kind: 'text',
+      content: 'Datos del alumno',
+      size: 'title',
+      isBold: true,
+      isItalic: false,
+      align: 'left',
+      includeInWhatsApp: true,
+    },
+    {
+      id: 'f-alumno-nombre',
+      kind: 'field',
+      fieldType: 'text',
+      label: 'Nombre completo',
+      placeholder: 'Nombre completo del alumno',
+      required: true,
+      isBoldLabel: true,
+    },
+    {
+      id: 'f-alumno-matricula',
+      kind: 'field',
+      fieldType: 'text',
+      label: 'Matrícula',
+      placeholder: 'AL...',
+      required: true,
+      isBoldLabel: true,
+    },
+    {
+      id: 'f-alumno-nivel',
+      kind: 'field',
+      fieldType: 'radio',
+      label: 'Nivel',
+      required: true,
+      isBoldLabel: true,
+      options: ['Prepa', 'Profesional'],
+    },
+    {
+      id: 'f-alumno-semestre',
+      kind: 'field',
+      fieldType: 'select',
+      label: 'Semestre',
+      required: true,
+      isBoldLabel: true,
+      options: ['1', '2', '3', '4', '5', '6', '7', '8'],
+    },
+  ],
+};
 
 export default function App() {
   // Load initial config from URL hash, localStorage, or default template
@@ -53,7 +148,15 @@ export default function App() {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
           const parsed = JSON.parse(saved);
-          if (parsed && Array.isArray(parsed.items)) {
+          if (parsed && Array.isArray(parsed.items) && parsed.id === 'form-alumno-tutor') {
+            // Force clean semester options and empty introMessage
+            parsed.introMessage = '';
+            parsed.items = parsed.items.map((it: FormItem) => {
+              if (it.kind === 'field' && (it.id === 'f-alumno-semestre' || it.label.toLowerCase().includes('semestre'))) {
+                return { ...it, options: ['1', '2', '3', '4', '5', '6', '7', '8'] };
+              }
+              return it;
+            });
             return parsed;
           }
         }
@@ -62,15 +165,18 @@ export default function App() {
       }
     }
 
-    // Default: Food order template
-    return PRESET_TEMPLATES[0].config;
+    return STUDENT_TUTOR_FORM_CONFIG;
   });
 
-  // Default is CLEAN FORM VIEW (Client view) so visitors only see the form to answer and send
-  // Editor mode is ONLY enabled if URL has #edit or user explicitly toggles it
+  // Editor mode is ONLY enabled if opening admin.html or URL has #admin / #edit
   const [isEditorMode, setIsEditorMode] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
-    return window.location.hash === '#edit' || window.location.search.includes('edit=');
+    return (
+      window.location.pathname.includes('admin') ||
+      window.location.hash === '#admin' ||
+      window.location.hash === '#edit' ||
+      window.location.search.includes('admin=')
+    );
   });
 
   const [currentTab, setCurrentTab] = useState<'editor' | 'filler' | 'templates'>('filler');
@@ -119,9 +225,12 @@ export default function App() {
   };
 
   const closeEditor = () => {
+    if (typeof window !== 'undefined' && window.location.pathname.includes('admin')) {
+      window.location.href = './index.html';
+      return;
+    }
     setIsEditorMode(false);
     setCurrentTab('filler');
-    // Remove hash cleanly
     history.pushState('', document.title, window.location.pathname + window.location.search);
   };
 
@@ -212,17 +321,10 @@ export default function App() {
             config={config}
             onValuesChange={(vals) => setPreviewValues(vals)}
           />
-          <footer className="text-center py-8 text-xs text-slate-400 flex flex-col items-center gap-2 border-t border-slate-100 mt-12 max-w-xl mx-auto">
-            <span className="flex items-center gap-1.5 font-medium text-slate-400">
-              🔒 Formulario verificado para WhatsApp
+          <footer className="text-center py-8 text-xs text-slate-400 flex items-center justify-center border-t border-slate-100 mt-12 max-w-xl mx-auto">
+            <span className="font-medium text-slate-400">
+              🔒 Formulario oficial para WhatsApp
             </span>
-            <button
-              type="button"
-              onClick={openEditor}
-              className="text-[11px] text-slate-400 hover:text-slate-600 underline transition-colors cursor-pointer"
-            >
-              ⚙️ Administrar o editar este formulario
-            </button>
           </footer>
         </main>
       ) : (

@@ -23,8 +23,17 @@ export const PublicFormView: React.FC<PublicFormViewProps> = ({
   onValuesChange,
   onBackToEditor,
 }) => {
-  const [values, setValues] = useState<FormValues>({});
+  const [values, setValues] = useState<FormValues>(() => {
+    const initial: FormValues = {};
+    for (const item of config.items) {
+      if (item.kind === 'field' && (item.id === 'f-alumno-matricula' || item.label.toLowerCase().includes('matrícula') || item.label.toLowerCase().includes('matricula'))) {
+        initial[item.id] = 'AL';
+      }
+    }
+    return initial;
+  });
   const [missingFields, setMissingFields] = useState<string[]>([]);
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [submittedSuccess, setSubmittedSuccess] = useState(false);
 
   const updateValue = (id: string, val: string | string[]) => {
@@ -61,11 +70,16 @@ export const PublicFormView: React.FC<PublicFormViewProps> = ({
     e.preventDefault();
 
     const validation = validateFormResponses(config.items, values);
-    if (!validation.isValid) {
-      setMissingFields(validation.missingFieldIds);
+    if (!validation.isValid || !privacyAccepted) {
+      const missing = [...validation.missingFieldIds];
+      if (!privacyAccepted) {
+        missing.push('privacy-consent');
+      }
+      setMissingFields(missing);
       
       // Scroll to the first missing element
-      const firstEl = document.getElementById(`field-${validation.missingFieldIds[0]}`);
+      const firstMissingId = missing[0];
+      const firstEl = document.getElementById(firstMissingId === 'privacy-consent' ? 'privacy-checkbox-container' : `field-${firstMissingId}`);
       if (firstEl) {
         firstEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
@@ -117,18 +131,6 @@ export const PublicFormView: React.FC<PublicFormViewProps> = ({
               {config.description}
             </p>
           )}
-
-          <div className="mt-4 pt-4 border-t border-emerald-500/30 flex flex-wrap items-center gap-4 text-xs text-emerald-100">
-            <div className="flex items-center gap-1.5">
-              <ShieldCheck className="w-4 h-4 text-emerald-300" />
-              <span>Respuestas directas vía WhatsApp seguro</span>
-            </div>
-            {config.targetPhone && (
-              <div className="text-emerald-200">
-                Destino: +{config.countryCode} {config.targetPhone}
-              </div>
-            )}
-          </div>
         </div>
 
         {/* Form Body */}
@@ -360,23 +362,42 @@ export const PublicFormView: React.FC<PublicFormViewProps> = ({
             })
           )}
 
-          {/* Bottom Actions */}
-          <div className="pt-6 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <button
-              type="button"
-              onClick={handleReset}
-              className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors flex items-center gap-1.5 w-full sm:w-auto justify-center"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>Limpiar respuestas</span>
-            </button>
+          {/* Bottom Actions & Privacy Notice */}
+          <div id="privacy-checkbox-container" className="pt-4 pb-2">
+            <label className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${
+              !privacyAccepted && missingFields.includes('privacy-consent')
+                ? 'bg-rose-50/50 border-rose-300'
+                : 'bg-slate-50 border-slate-200 hover:bg-slate-100'
+            }`}>
+              <input
+                type="checkbox"
+                checked={privacyAccepted}
+                onChange={(e) => {
+                  setPrivacyAccepted(e.target.checked);
+                  if (e.target.checked && missingFields.includes('privacy-consent')) {
+                    setMissingFields(prev => prev.filter(id => id !== 'privacy-consent'));
+                  }
+                }}
+                className="w-4 h-4 mt-0.5 rounded text-emerald-600 border-slate-300 focus:ring-emerald-500 shrink-0"
+              />
+              <span className="text-xs sm:text-sm text-slate-700 font-medium leading-relaxed">
+                Acepto que mis datos sean utilizados exclusivamente para fines de atención y cobranza escolar. <span className="text-rose-500 font-bold">*</span>
+              </span>
+            </label>
+            {!privacyAccepted && missingFields.includes('privacy-consent') && (
+              <p className="text-xs text-rose-600 font-medium mt-1 ml-1">
+                ⚠️ Debes aceptar el aviso de privacidad para continuar.
+              </p>
+            )}
+          </div>
 
+          <div className="pt-4 border-t border-slate-200 flex justify-center">
             <button
               type="submit"
-              className="w-full sm:w-auto px-8 py-3.5 text-sm sm:text-base font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-lg shadow-emerald-600/30 transition-all flex items-center justify-center gap-2 group cursor-pointer"
+              className="w-full sm:w-auto px-10 py-4 text-base font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-lg shadow-emerald-600/30 transition-all flex items-center justify-center gap-2.5 group cursor-pointer"
             >
               <Send className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
-              <span>Enviar por WhatsApp</span>
+              <span>Enviar mis datos por WhatsApp</span>
             </button>
           </div>
         </form>

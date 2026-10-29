@@ -44,77 +44,72 @@ export function generateWhatsAppMessage(
 ): string {
   const parts: string[] = [];
 
-  // Form title
+  // Form title (Single clean header)
   if (config.title?.trim()) {
     parts.push(`📋 *${config.title.trim().toUpperCase()}*`);
   }
 
-  // Optional Intro Message
-  if (config.introMessage?.trim()) {
+  // Only add intro if distinct and not repeating the title
+  if (
+    config.introMessage?.trim() &&
+    !config.introMessage.includes('DATOS') &&
+    !config.introMessage.includes('REGISTRO')
+  ) {
     parts.push(config.introMessage.trim());
   }
-
-  parts.push('────────────────────');
 
   // Loop through form items
   for (const item of config.items) {
     if (item.kind === 'text') {
-      // If user enabled including this text block in WhatsApp message
       if (item.includeInWhatsApp && item.content.trim()) {
-        let formatted = item.content.trim();
-        if (item.isBold && item.isItalic) {
-          formatted = `*_ ${formatted} _*`;
-        } else if (item.isBold) {
-          formatted = `*${formatted}*`;
-        } else if (item.isItalic) {
-          formatted = `_${formatted}_`;
-        }
-        
         if (item.size === 'title') {
           parts.push(`\n📌 *${item.content.trim().toUpperCase()}*`);
         } else if (item.size === 'subtitle') {
-          parts.push(`\n▫️ ${formatted}`);
+          parts.push(`\n▫️ *${item.content.trim()}*`);
         } else {
-          parts.push(formatted);
+          parts.push(item.content.trim());
         }
       }
     } else if (item.kind === 'field') {
       const val = values[item.id];
-      const hasValue = Array.isArray(val) ? val.length > 0 : (val && val.trim() !== '');
+      const hasValue = Array.isArray(val) ? val.length > 0 : (val && String(val).trim() !== '');
 
       let labelText = item.label.trim() || 'Pregunta';
-      if (item.isBoldLabel) {
-        labelText = `*${labelText}*`;
-      } else {
-        labelText = `*${labelText}:*`;
+      if (!labelText.endsWith(':')) {
+        labelText = `${labelText}:`;
       }
+      const boldLabel = `*${labelText}*`;
 
       if (!hasValue) {
-        // If empty in preview, show placeholder indicator
-        parts.push(`${labelText} _(Sin responder)_`);
+        parts.push(`\n${boldLabel}\n_(Sin responder)_`);
       } else if (Array.isArray(val)) {
         // Multi-select checkbox
-        parts.push(`${labelText}`);
+        parts.push(`\n${boldLabel}`);
         for (const v of val) {
           parts.push(`  ✓ ${v}`);
         }
       } else {
-        // Standard text, textarea, single select, date, etc.
-        const stringVal = String(val).trim();
+        let stringVal = String(val).trim();
+        // If field is Semestre, guarantee it outputs ONLY the number (e.g. "3")
+        if (item.label.toLowerCase().includes('semestre') || item.id.includes('semestre')) {
+          stringVal = stringVal.replace(/^(semestre\s*)/i, '').trim();
+        }
+
         if (item.fieldType === 'textarea' && stringVal.includes('\n')) {
-          parts.push(`${labelText}\n> ${stringVal.replace(/\n/g, '\n> ')}`);
+          parts.push(`\n${boldLabel}\n> ${stringVal.replace(/\n/g, '\n> ')}`);
         } else {
-          parts.push(`${labelText} ${stringVal}`);
+          parts.push(`\n${boldLabel}\n${stringVal}`);
         }
       }
     }
   }
 
-  parts.push('────────────────────');
+  // Privacy consent confirmation
+  parts.push(`\n✓ Aceptó aviso de privacidad (fines de atención y cobranza escolar).`);
 
-  // Optional Outro Message
+  // Outro Message without trailing separator lines
   if (config.outroMessage?.trim()) {
-    parts.push(`_${config.outroMessage.trim()}_`);
+    parts.push(`\n_${config.outroMessage.trim()}_`);
   }
 
   return parts.join('\n');
