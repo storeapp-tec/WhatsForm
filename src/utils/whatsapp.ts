@@ -46,7 +46,7 @@ export function generateWhatsAppMessage(
 
   // Form title (Single clean header)
   if (config.title?.trim()) {
-    parts.push(`📋 *${config.title.trim().toUpperCase()}*`);
+    parts.push(`*${config.title.trim().toUpperCase()}*`);
   }
 
   // Only add intro if distinct and not repeating the title
@@ -63,7 +63,7 @@ export function generateWhatsAppMessage(
     if (item.kind === 'text') {
       if (item.includeInWhatsApp && item.content.trim()) {
         if (item.size === 'title') {
-          parts.push(`\n📌 *${item.content.trim().toUpperCase()}*`);
+          parts.push(`\n*${item.content.trim().toUpperCase()}*`);
         } else if (item.size === 'subtitle') {
           parts.push(`\n▫️ *${item.content.trim()}*`);
         } else {

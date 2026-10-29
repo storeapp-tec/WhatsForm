@@ -33,14 +33,14 @@ import { TemplateSelectorModal } from './components/Editor/TemplateSelectorModal
 import { ShareModal } from './components/Editor/ShareModal';
 import { buildWhatsAppUrl, decodeFormFromHash } from './utils/whatsapp';
 
-const STORAGE_KEY = 'whatsform_clean_alumno_tutor_v5';
+const STORAGE_KEY = 'whatsform_clean_alumno_tutor_v6';
 
 export const STUDENT_TUTOR_FORM_CONFIG: FormConfig = {
   id: 'form-alumno-tutor',
   title: 'Datos del Alumno y Tutor',
   description: 'Por favor ingresa la información requerida a continuación para enviarla por WhatsApp.',
   countryCode: '52',
-  targetPhone: '8331891871',
+  targetPhone: '8331554546',
   introMessage: '',
   outroMessage: 'Quedo al pendiente de la confirmación. ¡Muchas gracias!',
   items: [
@@ -149,8 +149,9 @@ export default function App() {
         if (saved) {
           const parsed = JSON.parse(saved);
           if (parsed && Array.isArray(parsed.items) && parsed.id === 'form-alumno-tutor') {
-            // Force clean semester options, empty introMessage, and bold text items
+            // Force clean semester options, empty introMessage, and default target phone
             parsed.introMessage = '';
+            parsed.targetPhone = '8331554546';
             parsed.items = parsed.items.map((it: FormItem) => {
               if (it.kind === 'text') {
                 return { ...it, isBold: true, size: 'title' };
