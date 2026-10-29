@@ -66,8 +66,12 @@ export default function App() {
     return PRESET_TEMPLATES[0].config;
   });
 
+  const [isClientView, setIsClientView] = useState<boolean>(() => {
+    return typeof window !== 'undefined' && window.location.hash.startsWith('#fill=');
+  });
+
   const [currentTab, setCurrentTab] = useState<'editor' | 'filler' | 'templates'>(() => {
-    if (typeof window !== 'undefined' && window.location.hash.includes('#fill=')) {
+    if (typeof window !== 'undefined' && window.location.hash.startsWith('#fill=')) {
       return 'filler';
     }
     return 'editor';
@@ -78,18 +82,22 @@ export default function App() {
   const [previewValues, setPreviewValues] = useState<FormValues>({});
   const [showAddMenu, setShowAddMenu] = useState(false);
 
-  // Sync to localStorage
+  // Sync to localStorage only if not in client view
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
-    } catch (e) {
-      console.error('Failed saving to localStorage', e);
+    if (!isClientView) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+      } catch (e) {
+        console.error('Failed saving to localStorage', e);
+      }
     }
-  }, [config]);
+  }, [config, isClientView]);
 
   // Handle URL hash changes
   useEffect(() => {
     const handleHashChange = () => {
+      const isClient = window.location.hash.startsWith('#fill=');
+      setIsClientView(isClient);
       const match = window.location.hash.match(/#fill=(.+)/);
       if (match && match[1]) {
         const decoded = decodeFormFromHash(match[1]);
@@ -97,6 +105,8 @@ export default function App() {
           setConfig(decoded);
           setCurrentTab('filler');
         }
+      } else if (!isClient) {
+        setCurrentTab('editor');
       }
     };
 
@@ -184,22 +194,35 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col selection:bg-emerald-500 selection:text-white">
-      {/* Global Navigation Header */}
-      <Header
-        currentTab={currentTab}
-        onTabChange={(tab) => setCurrentTab(tab)}
-        onOpenShare={() => setIsShareOpen(true)}
-        onOpenTemplates={() => setIsTemplatesOpen(true)}
-        onTestWhatsApp={handleTestWhatsApp}
-        phoneSet={Boolean(config.targetPhone)}
-      />
+      {/* If opened via shared link (#fill=...), show ONLY the public form */}
+      {isClientView ? (
+        <main className="flex-1 w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
+          <PublicFormView
+            config={config}
+            onValuesChange={(vals) => setPreviewValues(vals)}
+          />
+          <footer className="text-center py-6 text-xs text-slate-400">
+            Formulario seguro para WhatsApp
+          </footer>
+        </main>
+      ) : (
+        <>
+          {/* Global Navigation Header (Only in Editor Mode) */}
+          <Header
+            currentTab={currentTab}
+            onTabChange={(tab) => setCurrentTab(tab)}
+            onOpenShare={() => setIsShareOpen(true)}
+            onOpenTemplates={() => setIsTemplatesOpen(true)}
+            onTestWhatsApp={handleTestWhatsApp}
+            phoneSet={Boolean(config.targetPhone)}
+          />
 
-      {/* Main Workspace Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        
-        {/* TAB: BUILDER / EDITOR */}
-        {currentTab === 'editor' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Main Workspace Container */}
+          <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            
+            {/* TAB: BUILDER / EDITOR */}
+            {currentTab === 'editor' && (
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             
             {/* Left Column: Form Builder Canvas (7 cols) */}
             <div className="lg:col-span-7 space-y-6">
@@ -441,21 +464,23 @@ export default function App() {
 
       </main>
 
-      {/* Modals */}
-      <TemplateSelectorModal
-        isOpen={isTemplatesOpen}
-        onClose={() => setIsTemplatesOpen(false)}
-        onSelectTemplate={(newConfig) => {
-          setConfig(newConfig);
-          setPreviewValues({});
-        }}
-      />
+        {/* Modals */}
+        <TemplateSelectorModal
+          isOpen={isTemplatesOpen}
+          onClose={() => setIsTemplatesOpen(false)}
+          onSelectTemplate={(newConfig) => {
+            setConfig(newConfig);
+            setPreviewValues({});
+          }}
+        />
 
-      <ShareModal
-        isOpen={isShareOpen}
-        onClose={() => setIsShareOpen(false)}
-        config={config}
-      />
-    </div>
+        <ShareModal
+          isOpen={isShareOpen}
+          onClose={() => setIsShareOpen(false)}
+          config={config}
+        />
+      </>
+    )}
+  </div>
   );
 }

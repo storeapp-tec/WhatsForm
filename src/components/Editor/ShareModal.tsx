@@ -93,6 +93,9 @@ export const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, config 
                 )}
               </button>
             </div>
+            <p className="mt-2 text-[11px] text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg p-2 flex items-center gap-1.5">
+              <span>🔒 <strong>Modo Cliente Seguro:</strong> Quien abra este enlace sólo podrá responder el formulario y enviarlo por WhatsApp. No tendrá acceso al editor ni a cambiar tus opciones.</span>
+            </p>
           </div>
 
           {/* Quick buttons */}
