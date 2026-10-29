@@ -86,25 +86,7 @@ export const PublicFormView: React.FC<PublicFormViewProps> = ({
   };
 
   return (
-    <div className="max-w-3xl mx-auto py-6 px-4 sm:px-6">
-      {/* Top Banner if in test mode */}
-      {onBackToEditor && (
-        <div className="mb-6 bg-emerald-50 border border-emerald-200 rounded-xl p-3.5 flex items-center justify-between text-xs sm:text-sm text-emerald-900">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span>
-              <strong>Modo de prueba activo:</strong> Estás probando el formulario tal como lo verá tu cliente.
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={onBackToEditor}
-            className="px-3 py-1 bg-white border border-emerald-300 rounded-lg font-medium text-emerald-800 hover:bg-emerald-100 transition-colors shrink-0"
-          >
-            Volver al Editor
-          </button>
-        </div>
-      )}
+    <div className="max-w-3xl mx-auto py-2 sm:py-6 px-3 sm:px-6">
 
       {/* Validation Error Banner */}
       {missingFields.length > 0 && (
