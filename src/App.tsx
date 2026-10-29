@@ -160,7 +160,10 @@ export default function App() {
     }
 
     // ALWAYS FORCE THE CORRECT PHONE NUMBER AND CLEAN FORMAT
-    cfg.targetPhone = '8331554546';
+    const overridePhone = typeof window !== 'undefined' && (window as any).WHATSAPP_PHONE
+      ? String((window as any).WHATSAPP_PHONE).replace(/\D/g, '')
+      : '';
+    cfg.targetPhone = overridePhone || '8331554546';
     cfg.introMessage = '';
     cfg.items = cfg.items.map((it: FormItem) => {
       if (it.kind === 'text') {

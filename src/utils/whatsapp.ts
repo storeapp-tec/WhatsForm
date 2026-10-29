@@ -122,7 +122,12 @@ export function buildWhatsAppUrl(
   config: FormConfig,
   values: FormValues = {}
 ): string {
-  const fullPhone = sanitizePhoneNumber(config.countryCode, config.targetPhone);
+  // Allow manual override from window.WHATSAPP_PHONE in index.html
+  const overridePhone = typeof window !== 'undefined' && (window as any).WHATSAPP_PHONE
+    ? String((window as any).WHATSAPP_PHONE).replace(/\D/g, '')
+    : '';
+  const phoneToUse = overridePhone || config.targetPhone;
+  const fullPhone = sanitizePhoneNumber(config.countryCode, phoneToUse);
   const message = generateWhatsAppMessage(config, values);
   const encodedText = encodeURIComponent(message);
   
