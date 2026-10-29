@@ -133,35 +133,25 @@ export const STUDENT_TUTOR_FORM_CONFIG: FormConfig = {
 export default function App() {
   // Load initial config from URL hash, localStorage, or default template
   const [config, setConfig] = useState<FormConfig>(() => {
+    let cfg = STUDENT_TUTOR_FORM_CONFIG;
+
     // Check hash for #fill=...
     if (typeof window !== 'undefined' && window.location.hash) {
       const match = window.location.hash.match(/#fill=(.+)/);
       if (match && match[1]) {
         const decoded = decodeFormFromHash(match[1]);
-        if (decoded) return decoded;
+        if (decoded) {
+          cfg = decoded;
+        }
       }
-    }
-
-    // Check localStorage
-    if (typeof window !== 'undefined') {
+    } else if (typeof window !== 'undefined') {
+      // Check localStorage
       try {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
           const parsed = JSON.parse(saved);
           if (parsed && Array.isArray(parsed.items) && parsed.id === 'form-alumno-tutor') {
-            // Force clean semester options, empty introMessage, and default target phone
-            parsed.introMessage = '';
-            parsed.targetPhone = '8331554546';
-            parsed.items = parsed.items.map((it: FormItem) => {
-              if (it.kind === 'text') {
-                return { ...it, isBold: true, size: 'title' };
-              }
-              if (it.kind === 'field' && (it.id === 'f-alumno-semestre' || it.label.toLowerCase().includes('semestre'))) {
-                return { ...it, options: ['1', '2', '3', '4', '5', '6', '7', '8'] };
-              }
-              return it;
-            });
-            return parsed;
+            cfg = parsed;
           }
         }
       } catch (e) {
@@ -169,7 +159,20 @@ export default function App() {
       }
     }
 
-    return STUDENT_TUTOR_FORM_CONFIG;
+    // ALWAYS FORCE THE CORRECT PHONE NUMBER AND CLEAN FORMAT
+    cfg.targetPhone = '8331554546';
+    cfg.introMessage = '';
+    cfg.items = cfg.items.map((it: FormItem) => {
+      if (it.kind === 'text') {
+        return { ...it, isBold: true, size: 'title' };
+      }
+      if (it.kind === 'field' && (it.id === 'f-alumno-semestre' || it.label.toLowerCase().includes('semestre'))) {
+        return { ...it, options: ['1', '2', '3', '4', '5', '6', '7', '8'] };
+      }
+      return it;
+    });
+
+    return cfg;
   });
 
   // Editor mode is ONLY enabled if opening admin.html or URL has #admin / #edit
