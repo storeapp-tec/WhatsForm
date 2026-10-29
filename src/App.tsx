@@ -66,53 +66,64 @@ export default function App() {
     return PRESET_TEMPLATES[0].config;
   });
 
-  const [isClientView, setIsClientView] = useState<boolean>(() => {
-    return typeof window !== 'undefined' && window.location.hash.startsWith('#fill=');
+  // Default is CLEAN FORM VIEW (Client view) so visitors only see the form to answer and send
+  // Editor mode is ONLY enabled if URL has #edit or user explicitly toggles it
+  const [isEditorMode, setIsEditorMode] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return window.location.hash === '#edit' || window.location.search.includes('edit=');
   });
 
-  const [currentTab, setCurrentTab] = useState<'editor' | 'filler' | 'templates'>(() => {
-    if (typeof window !== 'undefined' && window.location.hash.startsWith('#fill=')) {
-      return 'filler';
-    }
-    return 'editor';
-  });
-
+  const [currentTab, setCurrentTab] = useState<'editor' | 'filler' | 'templates'>('filler');
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isTemplatesOpen, setIsTemplatesOpen] = useState(false);
   const [previewValues, setPreviewValues] = useState<FormValues>({});
   const [showAddMenu, setShowAddMenu] = useState(false);
 
-  // Sync to localStorage only if not in client view
+  // Sync config to localStorage
   useEffect(() => {
-    if (!isClientView) {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
-      } catch (e) {
-        console.error('Failed saving to localStorage', e);
-      }
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+    } catch (e) {
+      console.error('Failed saving to localStorage', e);
     }
-  }, [config, isClientView]);
+  }, [config]);
 
   // Handle URL hash changes
   useEffect(() => {
     const handleHashChange = () => {
-      const isClient = window.location.hash.startsWith('#fill=');
-      setIsClientView(isClient);
+      if (window.location.hash === '#edit') {
+        setIsEditorMode(true);
+        setCurrentTab('editor');
+        return;
+      }
+
       const match = window.location.hash.match(/#fill=(.+)/);
       if (match && match[1]) {
         const decoded = decodeFormFromHash(match[1]);
         if (decoded) {
           setConfig(decoded);
-          setCurrentTab('filler');
         }
-      } else if (!isClient) {
-        setCurrentTab('editor');
       }
+      setIsEditorMode(false);
+      setCurrentTab('filler');
     };
 
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
+
+  const openEditor = () => {
+    setIsEditorMode(true);
+    setCurrentTab('editor');
+    window.location.hash = 'edit';
+  };
+
+  const closeEditor = () => {
+    setIsEditorMode(false);
+    setCurrentTab('filler');
+    // Remove hash cleanly
+    history.pushState('', document.title, window.location.pathname + window.location.search);
+  };
 
   // Block item operations
   const handleUpdateItem = (index: number, updatedItem: FormItem) => {
@@ -194,19 +205,43 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col selection:bg-emerald-500 selection:text-white">
-      {/* If opened via shared link (#fill=...), show ONLY the public form */}
-      {isClientView ? (
+      {/* PUBLIC CLIENT VIEW (BY DEFAULT): No headers, no editor toolbar, only form */}
+      {!isEditorMode ? (
         <main className="flex-1 w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
           <PublicFormView
             config={config}
             onValuesChange={(vals) => setPreviewValues(vals)}
           />
-          <footer className="text-center py-6 text-xs text-slate-400">
-            Formulario seguro para WhatsApp
+          <footer className="text-center py-8 text-xs text-slate-400 flex flex-col items-center gap-2 border-t border-slate-100 mt-12 max-w-xl mx-auto">
+            <span className="flex items-center gap-1.5 font-medium text-slate-400">
+              🔒 Formulario verificado para WhatsApp
+            </span>
+            <button
+              type="button"
+              onClick={openEditor}
+              className="text-[11px] text-slate-400 hover:text-slate-600 underline transition-colors cursor-pointer"
+            >
+              ⚙️ Administrar o editar este formulario
+            </button>
           </footer>
         </main>
       ) : (
         <>
+          {/* Top Bar for Admin/Owner */}
+          <div className="bg-slate-900 text-white px-4 py-2.5 flex items-center justify-between text-xs">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-emerald-400">Modo Constructor de Formulario</span>
+              <span className="text-slate-400 hidden sm:inline">· Los cambios se guardan automáticamente</span>
+            </div>
+            <button
+              type="button"
+              onClick={closeEditor}
+              className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg transition-colors cursor-pointer flex items-center gap-1.5"
+            >
+              <span>👁️ Ver Formulario Público (Listo)</span>
+            </button>
+          </div>
+
           {/* Global Navigation Header (Only in Editor Mode) */}
           <Header
             currentTab={currentTab}
