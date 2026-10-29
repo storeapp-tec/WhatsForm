@@ -154,7 +154,8 @@ export const PublicFormView: React.FC<PublicFormViewProps> = ({
                     }`}
                   >
                     <p
-                      className="text-xl font-extrabold text-slate-900 border-b border-slate-100 pb-2 mb-2"
+                      style={{ fontWeight: 800 }}
+                      className="text-xl text-slate-900 border-b border-slate-100 pb-2 mb-2"
                     >
                       {item.content}
                     </p>
