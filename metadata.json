@@ -1,0 +1,6 @@
+{
+  "name": "WhatsForm Studio",
+  "description": "Creador de formularios personalizados para recopilar información y enviarla con formato profesional por WhatsApp.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
